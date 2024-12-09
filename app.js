@@ -11,7 +11,7 @@ const app=express();
 //socket needs an http server and then it links with
 //the express server
 const server=http.createServer(app);
-const io=socket(server);
+const io=socket(server); //io has all functionalities of the socket
 
 const chess=new Chess();
 let players={};
@@ -23,7 +23,7 @@ app.use(express.static(path.join(__dirname,"public")));//serve files like images
 app.get("/",(req,res)=>{
     res.render("index",{title:"Chess game"});
 })
-//io has all functionalities of the socket so we need to on the io
+//connection is the event listener which gets triggered when client connects
 io.on("connection",function(uniquesocket)//uniquesocket is current player
 {
     console.log("connected");
@@ -33,6 +33,7 @@ io.on("connection",function(uniquesocket)//uniquesocket is current player
     // uniquesocket.on("disconnect",function(){
     //     console.log("disconnected")
     // })
+    //handle which role to assign to the player
     if(!players.white)
     {
         //i got my response in backend
@@ -59,6 +60,7 @@ io.on("connection",function(uniquesocket)//uniquesocket is current player
         }
 
     });
+    //when move event comes from the frontend
     uniquesocket.on("move",(move)=>{
     try {
         //if now its white turn to play but my id is not white then I cannot play I need to be white to play
@@ -67,10 +69,18 @@ io.on("connection",function(uniquesocket)//uniquesocket is current player
         if(chess.turn()==="b" && uniquesocket.id!=players.black)
             return;
         const result = chess.move(move);//result will store if my chess move is valid or not
+        //.move() is a method of chess.js
         if(result){ //if move is valid
             currentPlayer=chess.turn();
             io.emit("move",move);//sending the move to everyone including the current player
             io.emit("boardState",chess.fen());
+            
+// FEN is made up of six fields of ASCII characters, each separated by a space. The fields describe different aspects of the position, such as: 
+// Whose turn it is 
+// Whether castling is possible 
+// The number of moves played 
+// The placement of each piece on the board, starting at rank 8 and moving down to rank 1 
+
         }
         else{
             console.log("invalid move",move);
